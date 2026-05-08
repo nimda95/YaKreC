@@ -1,0 +1,32 @@
+name: kvm
+description: KVM-over-IP client for PiKVM and Sipeed NanoKVM.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.5.0
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.3.3
+  flutter_secure_storage: ^9.2.2
+  http: ^1.2.2
+  web_socket_channel: ^3.0.1
+  path_provider: ^2.1.5
+  uuid: ^4.5.1
+  provider: ^6.1.2
+  pointycastle: ^3.9.1
+  flutter_webrtc: ^0.12.5
+  multicast_dns: ^0.3.2+9
+  permission_handler: ^11.3.1
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

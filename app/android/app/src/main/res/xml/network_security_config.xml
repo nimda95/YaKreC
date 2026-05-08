@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KVM appliances live on local networks, often at bare IPs or .local
+     hostnames with self-signed certs. Allow cleartext everywhere and trust
+     user-installed CAs so users can pin their own PiKVM cert if they want.
+     The dart:io HttpClient bypass for self-signed certs is independent of
+     this. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system"/>
+            <certificates src="user"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -1,0 +1,36 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+.fvm/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Android — track sources, ignore build/IDE/local
+android/.gradle/
+android/.idea/
+android/build/
+android/captures/
+android/local.properties
+android/app/build/
+# Generated per-build by scripts/build.sh; points at the persistent keystore
+# in ~/.cache/kvm/keystore/.
+android/key.properties
+
+# Linux — track sources, ignore build
+linux/flutter/ephemeral/
+
+# iOS / macOS / Windows / Web — not supported in v1; if regenerated, ignore
+ios/
+macos/
+windows/
+web/
+
+app/android/.kotlin
