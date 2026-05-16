@@ -475,6 +475,7 @@ class PiKvmClient extends DeviceClient {
       allowAudio: device.webrtcAudioRx,
       allowMic: device.webrtcAudioRx && device.webrtcMicTx,
       micDeviceId: device.micDeviceId,
+      initialMicMuted: device.micMuted,
       logger: logger,
       onConnected: () {
         if (_state.value != LinkState.connected) {

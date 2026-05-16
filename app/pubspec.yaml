@@ -11,22 +11,25 @@ dependencies:
   flutter:
     sdk: flutter
   shared_preferences: ^2.3.3
-  flutter_secure_storage: ^9.2.2
+  flutter_secure_storage: ^10.1.0
   http: ^1.2.2
   web_socket_channel: ^3.0.1
   path_provider: ^2.1.5
   uuid: ^4.5.1
   provider: ^6.1.2
-  pointycastle: ^3.9.1
+  pointycastle: ^4.0.0
+  # flutter_webrtc 1.x is a substantial source-incompatible migration
+  # (package reorganisation, deprecated APIs removed). Holding on the
+  # 0.12.x line until a dedicated upgrade pass.
   flutter_webrtc: ^0.12.5
   multicast_dns: ^0.3.2+9
-  permission_handler: ^11.3.1
+  permission_handler: ^12.0.1
   url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

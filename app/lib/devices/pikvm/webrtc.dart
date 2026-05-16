@@ -30,6 +30,10 @@ class PiKvmWebRtc {
   /// browser/OS default selection win. Comes from the per-device pref when
   /// the user picked a non-default mic.
   final String? micDeviceId;
+  /// Initial mute state to apply to the captured mic track. Restored from
+  /// the per-device pref so the user's last mute/unmute choice survives
+  /// reconnects and app restarts.
+  final bool initialMicMuted;
   final Logger logger;
   final void Function() onConnected;
   final void Function(Object) onError;
@@ -41,6 +45,7 @@ class PiKvmWebRtc {
     required this.allowAudio,
     required this.allowMic,
     this.micDeviceId,
+    this.initialMicMuted = false,
     required this.logger,
     required this.onConnected,
     required this.onError,
@@ -59,7 +64,7 @@ class PiKvmWebRtc {
 
   MediaStream? _localStream;
   MediaStreamTrack? _localAudioTrack;
-  final ValueNotifier<bool> micMuted = ValueNotifier(false);
+  late final ValueNotifier<bool> micMuted = ValueNotifier(initialMicMuted);
   bool get hasMic => _localAudioTrack != null;
 
   bool _disposed = false;
@@ -274,10 +279,10 @@ class PiKvmWebRtc {
         logger.i('pikvm.webrtc', 'video track attached');
       } else if (track.kind == 'audio') {
         // Audio tracks play through the OS audio mixer once the connection
-        // is up — no renderer needed. Force speakerphone routing on Android
-        // so output doesn't land on the earpiece.
+        // is up — no renderer needed. Routing (speaker / BT / wired) is
+        // applied by ConnectPage._applyAudioSink once the peer reaches the
+        // connected state, so it can honour the user's per-device pick.
         logger.i('pikvm.webrtc', 'audio track attached');
-        _routeAudioToSpeaker();
       }
     };
 
@@ -319,22 +324,17 @@ class PiKvmWebRtc {
       });
       _localAudioTrack = _localStream!.getAudioTracks().firstOrNull;
       if (_localAudioTrack != null && _pc != null) {
+        // Honour the per-device persisted mute state so a session resumes
+        // exactly as the user left it.
+        _localAudioTrack!.enabled = !initialMicMuted;
         await _pc!.addTrack(_localAudioTrack!, _localStream!);
-        logger.i('pikvm.webrtc', 'mic added');
+        logger.i('pikvm.webrtc',
+            'mic added (${initialMicMuted ? "muted" : "unmuted"})');
       }
     } catch (e) {
       // Mic failure is non-fatal — connection continues without sending audio.
       logger.w('pikvm.webrtc',
           'mic capture failed (continuing without): $e');
-    }
-  }
-
-  Future<void> _routeAudioToSpeaker() async {
-    if (!Platform.isAndroid) return;
-    try {
-      await Helper.setSpeakerphoneOn(true);
-    } catch (e) {
-      logger.d('pikvm.webrtc', 'speakerphone routing failed: $e');
     }
   }
 

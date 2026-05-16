@@ -320,15 +320,24 @@ class _ConnectPageState extends State<ConnectPage>
     }
   }
 
-  /// Routes received audio to the user-picked sink. flutter_webrtc's
-  /// selectAudioOutput is desktop/web only; on Android/iOS it's a no-op
-  /// and the OS routing applies. Empty id resets to system default.
+  /// Routes received audio to the user-picked sink. On Android, an
+  /// audiooutput "deviceId" coming from flutter_webrtc is actually one of
+  /// {bluetooth, wired-headset, speaker, earpiece}. When the user hasn't
+  /// pinned a sink we use the BT-preferring helper so a paired headset
+  /// keeps audio (the previous setSpeakerphoneOn(true) forced output to
+  /// the phone speaker even with a BT headset attached).
   Future<void> _applyAudioSink() async {
     final sink = widget.device.audioSinkId;
     try {
-      await Helper.selectAudioOutput(sink ?? '');
+      if (sink == null || sink.isEmpty) {
+        if (Platform.isAndroid || Platform.isIOS) {
+          await Helper.setSpeakerphoneOnButPreferBluetooth();
+        }
+        return;
+      }
+      await Helper.selectAudioOutput(sink);
     } catch (e) {
-      _logger.d('audio', 'selectAudioOutput($sink) failed: $e');
+      _logger.d('audio', 'audio routing for sink=$sink failed: $e');
     }
   }
 
@@ -1160,7 +1169,11 @@ class _ConnectPageState extends State<ConnectPage>
         break;
       case _MenuAction.toggleMicMute:
         final muted = _client.micMuted?.value ?? false;
-        _client.setMicMuted(!muted);
+        final next = !muted;
+        _client.setMicMuted(next);
+        // Persist so the next session restores the same mute state.
+        widget.device.micMuted = next;
+        context.read<DeviceStore>().update(widget.device);
         break;
       case _MenuAction.toggleAbsolutePointer:
         () async {
@@ -2330,14 +2343,32 @@ class _StreamingSheetState extends State<_StreamingSheet> {
     _refreshAudioInputs();
   }
 
+  List<MediaDeviceInfo> _dedupByDeviceId(Iterable<MediaDeviceInfo> src) {
+    final seen = <String>{};
+    final out = <MediaDeviceInfo>[];
+    for (final d in src) {
+      if (seen.add(d.deviceId)) out.add(d);
+    }
+    return List.unmodifiable(out);
+  }
+
   Future<void> _refreshAudioInputs() async {
     try {
       final devs = await navigator.mediaDevices.enumerateDevices();
       if (!mounted) return;
-      final inputs =
-          devs.where((d) => d.kind == 'audioinput').toList(growable: false);
-      final outputs =
-          devs.where((d) => d.kind == 'audiooutput').toList(growable: false);
+      // De-dup by deviceId. flutter_webrtc's Android implementation can
+      // emit colliding ids (e.g. two built-in mics both reported as
+      // "microphone-" because getAddress() is empty on SDK<P, or two
+      // BluetoothHeadset entries both labelled "bluetooth"). Two
+      // DropdownMenuItems with the same value crash the dialog the
+      // moment that value is selected — Flutter's DropdownButton
+      // asserts exactly-one-item-per-value.
+      final inputs = _dedupByDeviceId(
+        devs.where((d) => d.kind == 'audioinput'),
+      );
+      final outputs = _dedupByDeviceId(
+        devs.where((d) => d.kind == 'audiooutput'),
+      );
       setState(() {
         _audioInputs = inputs;
         _audioOutputs = outputs;

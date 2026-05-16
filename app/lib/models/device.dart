@@ -41,6 +41,12 @@ class Device {
   bool webrtcAudioRx;
   bool webrtcMicTx;
 
+  /// Whether the mic track should start out muted on the next session. The
+  /// runtime mute state (toggled via the connect-page menu / long-press)
+  /// writes back here so the choice survives reconnects and app restarts.
+  /// Only consulted when [webrtcMicTx] is on.
+  bool micMuted;
+
   /// OS-level audio-input device id to capture when [webrtcMicTx] is on.
   /// Null = let the OS pick the default. Persisted so the choice survives
   /// reconnects and app restarts.
@@ -75,6 +81,7 @@ class Device {
     this.username,
     this.webrtcAudioRx = false,
     this.webrtcMicTx = false,
+    this.micMuted = false,
     this.micDeviceId,
     this.audioSinkId,
     this.keymap,
@@ -108,6 +115,7 @@ class Device {
         'username': username,
         'webrtcAudioRx': webrtcAudioRx,
         'webrtcMicTx': webrtcMicTx,
+        'micMuted': micMuted,
         'micDeviceId': micDeviceId,
         'audioSinkId': audioSinkId,
         'keymap': keymap,
@@ -129,6 +137,7 @@ class Device {
         username: j['username'] as String?,
         webrtcAudioRx: j['webrtcAudioRx'] as bool? ?? false,
         webrtcMicTx: j['webrtcMicTx'] as bool? ?? false,
+        micMuted: j['micMuted'] as bool? ?? false,
         micDeviceId: j['micDeviceId'] as String?,
         audioSinkId: j['audioSinkId'] as String?,
         keymap: j['keymap'] as String?,

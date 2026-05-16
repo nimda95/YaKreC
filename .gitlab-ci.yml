@@ -1,0 +1,67 @@
+# GitLab CI for the kvm app.
+#
+# Assumes the runner uses the **shell executor** (not docker) so that
+# `./scripts/build.sh` can call `docker run` directly on the host.
+# Runner host requirements:
+#   * Docker installed; the runner user is in the `docker` group
+#   * A persistent $HOME so the cache directory survives between jobs
+#
+# Caching strategy: we deliberately do NOT use GitLab's built-in `cache:`
+# keyword. That mechanism tar-uploads/downloads the cache per job, which
+# would mean shipping ~5–7 GB of Android SDK + Gradle deps on every
+# pipeline. On a self-hosted runner with persistent local storage,
+# bind-mounting a host directory (build.sh's KVM_CACHE_DIR, defaulting to
+# `~/.cache/kvm`) is dramatically faster — the cache lives on the runner
+# and is reused untouched. Same set of caches used locally:
+#   ~/.cache/kvm/pub           — pub packages
+#   ~/.cache/kvm/gradle        — Gradle wrappers, AAR libs, plugin JARs
+#   ~/.cache/kvm/android-sdk   — NDK, build-tools, platforms
+#   ~/.cache/kvm/android-user  — debug.keystore, build cache
+#   ~/.cache/kvm/keystore      — persistent release keystore
+
+variables:
+  GIT_DEPTH: "20"
+  GIT_STRATEGY: fetch
+  # Override here if you want to relocate the cache. Default is the runner
+  # user's ~/.cache/kvm (resolved by build.sh from $HOME).
+  # KVM_CACHE_DIR: "/var/cache/kvm-builder"
+
+stages:
+  - build
+
+.build-template:
+  stage: build
+  tags:
+    # Replace with whatever tag your self-hosted runner is registered with.
+    - self-hosted
+  interruptible: true
+  before_script:
+    - docker --version
+
+build:
+  extends: .build-template
+  parallel:
+    matrix:
+      - TARGET: [apk, appimage]
+  script:
+    - ./scripts/build.sh --target=$TARGET
+  artifacts:
+    name: "kvm-${TARGET}-${CI_COMMIT_SHORT_SHA}"
+    expire_in: 14 days
+    when: always
+    paths:
+      - build/dist/
+
+# Optional: fast-iteration debug APK. Trigger by setting the pipeline
+# variable BUILD_DEBUG=1 in the GitLab UI when you push.
+build:debug:
+  extends: .build-template
+  rules:
+    - if: '$BUILD_DEBUG == "1"'
+  script:
+    - ./scripts/build.sh --target=apk --mode=debug
+  artifacts:
+    name: "kvm-debug-${CI_COMMIT_SHORT_SHA}"
+    expire_in: 14 days
+    paths:
+      - build/dist/kvm-debug.apk

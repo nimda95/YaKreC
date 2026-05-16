@@ -74,6 +74,7 @@ class _AddDeviceDialogState extends State<AddDeviceDialog> {
       customHeaders: existing?.customHeaders ?? {},
       webrtcAudioRx: existing?.webrtcAudioRx ?? false,
       webrtcMicTx: existing?.webrtcMicTx ?? false,
+      micMuted: existing?.micMuted ?? false,
       micDeviceId: existing?.micDeviceId,
       audioSinkId: existing?.audioSinkId,
       keymap: existing?.keymap,
